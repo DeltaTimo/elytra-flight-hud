@@ -366,6 +366,7 @@ public class ElytraFlightHud implements ClientModInitializer {
 					}
 
 					textRenderer.draw(stack, "" + ((int) Math.floor(player_pos.y)), screenCenterX + horizon_width * 0.8f, (float) screenCenterY, 0x00FF00);
+					textRenderer.draw(stack, "" + (Math.round((float) player_velocity_vector.y * 10f)), screenCenterX + horizon_width * 0.8f, (float) screenCenterY + textRenderer.fontHeight * 1.5f, 0x00FF00);
 					textRenderer.draw(stack, radar_height + "R", screenCenterX + horizon_width * 0.75f, screenCenterY + screenHeight * (1f / 8f), 0x00FF00);
 
 					// if (air_speed < 0.01) air_speed = 0;
