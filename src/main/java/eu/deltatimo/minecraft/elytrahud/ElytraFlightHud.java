@@ -14,6 +14,7 @@ import net.minecraft.client.render.debug.DebugRenderer;
 import net.minecraft.client.util.Window;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.boss.BossBar;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -366,12 +367,28 @@ public class ElytraFlightHud implements ClientModInitializer {
 					}
 
 					textRenderer.draw(stack, "" + ((int) Math.floor(player_pos.y)), screenCenterX + horizon_width * 0.8f, (float) screenCenterY, 0x00FF00);
-					textRenderer.draw(stack, "" + (Math.round((float) player_velocity_vector.y * 10f)), screenCenterX + horizon_width * 0.8f, (float) screenCenterY + textRenderer.fontHeight * 1.5f, 0x00FF00);
+					// textRenderer.draw(stack, "" + (Math.round((float) player_velocity_vector.y * 10f)), screenCenterX + horizon_width * 0.8f, (float) screenCenterY + textRenderer.fontHeight * 1.5f, 0x00FF00);
+					int fall_distance_color = 0x00FF00;
+					if (player.fallDistance > player.getSafeFallDistance()*2f) {
+						fall_distance_color = 0xFF0000;
+					} else if (player.fallDistance > player.getSafeFallDistance()) {
+						fall_distance_color = 0xFF8800;
+					} else if (player.fallDistance > player.getSafeFallDistance()*0.75f) {
+						fall_distance_color = 0xFFFF00;
+					}
+					textRenderer.draw(stack, "" + (Math.round((float) player_velocity_vector.y * 10f)), screenCenterX + horizon_width * 0.8f, (float) screenCenterY + textRenderer.fontHeight * 1.5f, fall_distance_color);
 					textRenderer.draw(stack, radar_height + "R", screenCenterX + horizon_width * 0.75f, screenCenterY + screenHeight * (1f / 8f), 0x00FF00);
 
 					// if (air_speed < 0.01) air_speed = 0;
 
-					textRenderer.draw(stack, "" + air_speed, screenCenterX - horizon_width * 0.75f - textRenderer.getWidth("" + air_speed), (float) screenCenterY, 0x00FF00);
+					int air_speed_color = 0x00FF00;
+					double collisionDamage = collisionDamageHorizontal(player);
+					if (collisionDamage > 5) {
+						air_speed_color = 0x88FF00;
+					} else if (collisionDamage > 0) {
+						air_speed_color = 0x44FF00;
+					}
+					textRenderer.draw(stack, "" + air_speed, screenCenterX - horizon_width * 0.75f - textRenderer.getWidth("" + air_speed), (float) screenCenterY, air_speed_color);
 
 					for (float heading_blip = heading_fives - 3f*0.5f; heading_blip <= heading/10f + 3*0.5f; heading_blip += 0.5f) {
 						// Skip first blip if it's outside.
@@ -410,6 +427,12 @@ public class ElytraFlightHud implements ClientModInitializer {
 			lines.add(DrawLineArguments.make((float)x1, (float)y1, (float)x2, (float)y2));
 		}
 		return lines;
+	}
+
+	private double collisionDamageHorizontal(PlayerEntity player) {
+		Vec3d velocity = player.getVelocity();
+		Vec3d multiplied_velocity = velocity.multiply(0.99f, 0.98f, 0.99f);
+		return multiplied_velocity.horizontalLength() * 10.0 - player.getSafeFallDistance();
 	}
 
 	private void renderLine(float x, float y, float x2, float y2, float r, float g, float b, float a) {
