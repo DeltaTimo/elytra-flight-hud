@@ -1,3 +1,5 @@
+![buildstatus](https://github.com/deltatimo/elytra-flight-hud/actions/workflows/build.yml/badge.svg "Build Status")
+
 # Elytra Flight HUD
 
 ## Installation
