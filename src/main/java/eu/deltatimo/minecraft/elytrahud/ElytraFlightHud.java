@@ -274,7 +274,7 @@ public class ElytraFlightHud implements ClientModInitializer {
 				// drawLine.accept(DrawLineArguments.make(flight_vector_x, flight_vector_y - flight_vector_size/2f, flight_vector_x, flight_vector_y - flight_vector_size/2f - flight_vector_size*0.4f).color(0f, 1f, 0f, 1f * hud_alpha));
 				// drawLine.accept(DrawLineArguments.make(flight_vector_x - flight_vector_size/2f - flight_vector_size*0.5f, flight_vector_y, flight_vector_x - flight_vector_size/2f, flight_vector_y).color(0f, 1f, 0f, 1f * hud_alpha));
 				// drawLine.accept(DrawLineArguments.make(flight_vector_x + flight_vector_size/2f, flight_vector_y, flight_vector_x + flight_vector_size/2f + flight_vector_size*0.5f, flight_vector_y).color(0f, 1f, 0f, 1f * hud_alpha));
-				float elytra_roll_deg = player.elytraRoll;
+				float elytra_roll_deg = forwardSpeed < 0.0001f ? 0f : (float)(Math.min(2, Math.max(-2, sidewaysSpeed/forwardSpeed)))*-45f;
 				float elytra_roll = (float)Math.toRadians(elytra_roll_deg);
 				drawLine.accept(DrawLineArguments.make(
 						flight_vector_x + (float)Math.sin(elytra_roll) * flight_vector_radius,
@@ -376,7 +376,8 @@ public class ElytraFlightHud implements ClientModInitializer {
 						// Skip first blip if it's outside.
 						if (heading_blip < heading/10f - 3*0.5f) continue;
 						if (Math.floor(heading_blip) == heading_blip) {
-							float heading_blip_360 = heading_blip < 0 ? (36 - (heading_blip % 36)) : (heading_blip % 36);
+							float heading_blip_360 = heading_blip < 0 ? (36 - realMod(heading_blip, 36)) : (heading_blip % 36);
+							if (heading_blip_360 == 36) heading_blip_360 = 0;
 							String heading_text = ((Math.floor(heading_blip_360) < 10) ? "0" : "") + (int)Math.floor(heading_blip_360);
 							float heading_offset = heading - (heading_blip * 10f);
 							float heading_x = screenCenterX - (heading_offset/15f)*compass_width/2f;
@@ -390,6 +391,11 @@ public class ElytraFlightHud implements ClientModInitializer {
 				GlStateManager._enableTexture();
 			}
 		}
+	}
+
+	private float realMod(float a, float b) {
+		float result = a % b;
+		return result < 0 ? result + b : result;
 	}
 
 	private Collection<DrawLineArguments> circleLines(float x, float y, float radius, int parts) {
