@@ -126,7 +126,7 @@ public class ElytraFlightHud implements ClientModInitializer {
 
 	private static final float GRAVITY = -0.0784f;
 
-	private float hud_alpha = 0.5f;
+	private float hud_alpha = 0.0f;
 
 	private void onHudRender(MatrixStack stack, float tickDelta) {
 		TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
@@ -160,6 +160,7 @@ public class ElytraFlightHud implements ClientModInitializer {
 		ClientPlayerEntity player = client.player;
 		if (player != null) {
 			float hud_alpha_target = player.isFallFlying() ? 1.0f : 0.0f;
+			// float hud_alpha_target = 1f;
 			hud_alpha = Math.max(0f, Math.min(1f, hud_alpha + Math.signum(hud_alpha_target - hud_alpha) * tickDelta * 0.1f));
 			if (hud_alpha >= 0.0001) {
 				Vec3d player_pos = player.getPos();
@@ -221,6 +222,7 @@ public class ElytraFlightHud implements ClientModInitializer {
 					double diff_deg = i - camera_pitch_deg; // -90 - -30 = -90 + 30 = -60
 					float diff_pixels = (float) (pixels_per_deg * diff_deg);
 					float height = screenCenterY + diff_pixels;
+					if (height > screenHeight*0.85f || height < screenHeight*0.15f) continue;
 
 					drawLine.accept(DrawLineArguments.make(screenCenterX - horizon_width / 2f, height, screenCenterX - horizon_width / 2f + horizon_width / 3, height).color(0f, 1f, 0f, 1f * hud_alpha));
 					drawLine.accept(DrawLineArguments.make(screenCenterX - horizon_width / 2f, height, screenCenterX - horizon_width / 2f, height + horizon_vertical_blip_length).color(0f, 1f, 0f, 1f * hud_alpha));
@@ -235,6 +237,7 @@ public class ElytraFlightHud implements ClientModInitializer {
 					double diff_deg = i - camera_pitch_deg; // -90 - -30 = -90 + 30 = -60
 					float diff_pixels = (float) (pixels_per_deg * diff_deg);
 					float height = screenCenterY + diff_pixels;
+					if (height > screenHeight*0.85f || height < screenHeight*0.15f) continue;
 
 					// left horizontal lines
 					float leftx = screenCenterX - horizon_width / 2f;
@@ -252,8 +255,10 @@ public class ElytraFlightHud implements ClientModInitializer {
 					drawLine.accept(DrawLineArguments.make(screenCenterX - horizon_width / 2f + horizon_width, height, screenCenterX - horizon_width / 2f + horizon_width, height - horizon_vertical_blip_length).color(0f, 1f, 0f, 1f * hud_alpha));
 				}
 
-				drawLine.accept(DrawLineArguments.make(screenCenterX - horizon_width / 2f, center_height, screenCenterX - horizon_width / 2f + horizon_width / 3, center_height).color(0f, 1f, 0f, 1f * hud_alpha));
-				drawLine.accept(DrawLineArguments.make(screenCenterX - horizon_width / 2f + 2 * horizon_width / 3f, center_height, screenCenterX + horizon_width / 2f, center_height).color(0f, 1f, 0f, 1f * hud_alpha));
+				if (!(center_height > screenHeight*0.85f || center_height < screenHeight*0.15f)) {
+					drawLine.accept(DrawLineArguments.make(screenCenterX - horizon_width / 2f, center_height, screenCenterX - horizon_width / 2f + horizon_width / 3, center_height).color(0f, 1f, 0f, 1f * hud_alpha));
+					drawLine.accept(DrawLineArguments.make(screenCenterX - horizon_width / 2f + 2 * horizon_width / 3f, center_height, screenCenterX + horizon_width / 2f, center_height).color(0f, 1f, 0f, 1f * hud_alpha));
+				}
 
 				// float flight_vector_size = screenLesser / 100f;
 				float flight_vector_size = screenLesser / 70f;
@@ -305,7 +310,41 @@ public class ElytraFlightHud implements ClientModInitializer {
 				// bufferBuilder.vertex(matrix4f, screenCenterX + screenWidth/4.0f, screenCenterY - screenHeight/4.0f, -90.0f).color(0, 255, 0, 255).normal(matrix3f, 1.0F, 1.0F, 0.0F).next();
 				// bufferBuilder.vertex(0.0D, 0.0D, -90.0D).color(0, 255, 0, 255).normal(0.0F, 0.0F, 1.0F).next();
 				// bufferBuilder.vertex((double)screenCenterX, (double)screenCenterY, -90.0D).color(0, 255, 0, 255).normal(0.0F, 0.0F, 1.0F).next();
+
+				// Compass
+
+				float heading = camera.getYaw();
+				float compass_width = 0.85f*horizon_width;
+				int heading_tens = Math.round(heading/10f);
+				float heading_fives = Math.round((heading*2f)/10f)/2f;
+				float compass_blip_height = screenHeight/200f;
+
+				for (float heading_blip = heading_fives - 3f*0.5f; heading_blip <= heading/10f + 3*0.5f; heading_blip += 0.5f) {
+					// Skip first blip if it's outside.
+					if (heading_blip < heading/10f - 3*0.5f) continue;
+					float heading_offset = heading - (heading_blip * 10f);
+					float heading_x = screenCenterX - (heading_offset/15f)*compass_width/2f;
+					float font_height = textRenderer.fontHeight;
+					drawLine.accept(DrawLineArguments.make(heading_x, screenCenterY + screenHeight/4f + font_height*1.05f, heading_x, screenCenterY + screenHeight/4f + font_height*1.05f + compass_blip_height).color(0f, 1f, 0f, 1f * hud_alpha));
+				}
+
+				float compass_triangle_y = screenCenterY + screenHeight/4f + textRenderer.fontHeight*1.05f + compass_blip_height*0.95f;
+				float compass_triangle_height = compass_blip_height;
+				float compass_triangle_width = compass_triangle_height*2f;
+
+				drawLine.accept(DrawLineArguments.make((float) screenCenterX, compass_triangle_y, screenCenterX + compass_triangle_width/2f, compass_triangle_y + compass_triangle_height).color(0f, 1f, 0f, 1f * hud_alpha));
+				drawLine.accept(DrawLineArguments.make((float) screenCenterX + compass_triangle_width/2f, compass_triangle_y + compass_triangle_height, screenCenterX - compass_triangle_width/2f, compass_triangle_y + compass_triangle_height).color(0f, 1f, 0f, 1f * hud_alpha));
+				drawLine.accept(DrawLineArguments.make((float) screenCenterX - compass_triangle_width/2f, compass_triangle_y + compass_triangle_height, screenCenterX, compass_triangle_y).color(0f, 1f, 0f, 1f * hud_alpha));
+				// bufferBuilder.vertex(matrix4f, screenCenterX + compass_triangle_width/2f, compass_triangle_y + compass_triangle_height, -90f).color(0f, 1f, 0f, 1f * hud_alpha).next();
+				// bufferBuilder.vertex(matrix4f, screenCenterX - compass_triangle_width/2f, compass_triangle_y + compass_triangle_height, -90f).color(0f, 1f, 0f, 1f * hud_alpha).next();
+
+				// bufferBuilder.begin(VertexFormat.DrawMode.TRIANGLE_STRIP, VertexFormats.POSITION_COLOR);
+				// bufferBuilder.vertex(matrix4f, screenCenterX, compass_triangle_y, -90f).color(0f, 1f, 0f, 1f * hud_alpha).next();
+				// bufferBuilder.vertex(matrix4f, screenCenterX + compass_triangle_width/2f, compass_triangle_y + compass_triangle_height, -90f).color(0f, 1f, 0f, 1f * hud_alpha).next();
+				// bufferBuilder.vertex(matrix4f, screenCenterX - compass_triangle_width/2f, compass_triangle_y + compass_triangle_height, -90f).color(0f, 1f, 0f, 1f * hud_alpha).next();
+
 				tessellator.draw();
+
 				RenderSystem.lineWidth(1.0F);
 
 				Vec3d player_velocity_vector = new Vec3d(player.getVelocity().x, player.getVelocity().y - GRAVITY, player.getVelocity().z);
@@ -318,7 +357,9 @@ public class ElytraFlightHud implements ClientModInitializer {
 						// if (i < screen_upper_pitch_deg) continue;
 						double diff_deg = i - camera_pitch_deg; // -90 - -30 = -90 + 30 = -60
 						float diff_pixels = (float) (pixels_per_deg * diff_deg);
-						float height = screenCenterY + diff_pixels - screenHeight / 160f;
+						// float height = screenCenterY + diff_pixels - screenHeight / 160f;
+						float height = screenCenterY + diff_pixels - (i > 0 ? (0.9f*textRenderer.fontHeight) : (textRenderer.fontHeight*(0.15f)));
+						if (height > screenHeight*0.85f || height < screenHeight*0.15f) continue;
 						String text = "" + Math.abs(i);
 						textRenderer.draw(stack, text, screenCenterX + horizon_width / 2f, height, 0x00FF00);
 						textRenderer.draw(stack, text, screenCenterX - horizon_width / 2f - textRenderer.getWidth(text) - screenWidth / 500f, height, 0x00FF00);
@@ -330,6 +371,18 @@ public class ElytraFlightHud implements ClientModInitializer {
 					// if (air_speed < 0.01) air_speed = 0;
 
 					textRenderer.draw(stack, "" + air_speed, screenCenterX - horizon_width * 0.75f - textRenderer.getWidth("" + air_speed), (float) screenCenterY, 0x00FF00);
+
+					for (float heading_blip = heading_fives - 3f*0.5f; heading_blip <= heading/10f + 3*0.5f; heading_blip += 0.5f) {
+						// Skip first blip if it's outside.
+						if (heading_blip < heading/10f - 3*0.5f) continue;
+						if (Math.floor(heading_blip) == heading_blip) {
+							float heading_blip_360 = heading_blip < 0 ? (36 - (heading_blip % 36)) : (heading_blip % 36);
+							String heading_text = ((Math.floor(heading_blip_360) < 10) ? "0" : "") + (int)Math.floor(heading_blip_360);
+							float heading_offset = heading - (heading_blip * 10f);
+							float heading_x = screenCenterX - (heading_offset/15f)*compass_width/2f;
+							textRenderer.draw(stack, heading_text, heading_x - textRenderer.getWidth(heading_text)/2f, screenCenterY + screenHeight/4f, 0x00FF00);
+						}
+					}
 				}
 
 				GlStateManager._enableCull();
