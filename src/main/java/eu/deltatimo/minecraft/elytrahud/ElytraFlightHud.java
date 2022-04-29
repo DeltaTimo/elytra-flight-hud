@@ -186,8 +186,8 @@ public class ElytraFlightHud implements ClientModInitializer {
 				// MatrixStack modelviewstack = RenderSystem.getModelViewStack();
 				// modelviewstack.push();
 				// RenderSystem.applyModelViewMatrix();
-				Matrix4f matrix4f = stack.peek().getPositionMatrix();
-				Matrix3f matrix3f = stack.peek().getNormalMatrix();
+				Matrix4f matrix4f = stack.peek().getModel();
+				Matrix3f matrix3f = stack.peek().getNormal();
 				// Matrix4f matrix4f = modelviewstack.peek().getPositionMatrix();
 				///
 				GlStateManager._disableTexture();
