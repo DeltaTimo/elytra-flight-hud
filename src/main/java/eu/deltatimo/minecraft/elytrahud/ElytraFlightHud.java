@@ -128,7 +128,7 @@ public class ElytraFlightHud implements ClientModInitializer {
 		MinecraftClient client = MinecraftClient.getInstance();
 		Window window = client.getWindow();
 		double aspect = (double)window.getWidth()/(double)window.getHeight();
-		double fov_deg = client.options.fov;
+		double fov_deg = client.options.getFov().getValue();
 		double fov = Math.toRadians(fov_deg);
 		double hor_fov = 2.0 * Math.atan(Math.tan(fov/2.0) * aspect);
 		double hor_fov_deg = Math.toDegrees(hor_fov);
