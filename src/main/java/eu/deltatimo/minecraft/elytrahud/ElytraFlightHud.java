@@ -3,14 +3,19 @@ package eu.deltatimo.minecraft.elytrahud;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.*;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.Window;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -108,6 +113,8 @@ public class ElytraFlightHud implements ClientModInitializer {
 	// That way, it's clear which mod wrote info, warnings, and errors.
 	public static final Logger LOGGER = LogManager.getLogger("elytra-flight-hud");
 
+	private boolean hudEnabled = true;
+
 	@Override
 	public void onInitializeClient() {
 		// This code runs as soon as Minecraft is in a mod-load-ready state.
@@ -115,6 +122,16 @@ public class ElytraFlightHud implements ClientModInitializer {
 		// Proceed with mild caution.
 
 		HudRenderCallback.EVENT.register(this::onHudRender);
+
+		var keyToggle = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.elytra_flight_hud.toggle", InputUtil.Type.KEYSYM, InputUtil.GLFW_KEY_U, "category.elytra_flight_hud.general"));
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (keyToggle.wasPressed()) {
+				hudEnabled = !hudEnabled;
+				if (client.player != null) {
+					client.player.sendMessage(hudEnabled ? Text.translatable("hud.elytra_flight_hud.hud_enabled") : Text.translatable("hud.elytra_flight_hud.hud_disabled"), true);
+				}
+			}
+		});
 
 		LOGGER.info("Elytra Flight Hud initialized!");
 	}
@@ -155,6 +172,9 @@ public class ElytraFlightHud implements ClientModInitializer {
 		ClientPlayerEntity player = client.player;
 		if (player != null) {
 			float hud_alpha_target = player.isFallFlying() ? 1.0f : 0.0f;
+			if (!hudEnabled) {
+				hud_alpha_target = 0.0f;
+			}
 			// float hud_alpha_target = 1f;
 			hud_alpha = Math.max(0f, Math.min(1f, hud_alpha + Math.signum(hud_alpha_target - hud_alpha) * tickDelta * 0.1f));
 			if (hud_alpha >= 0.0001) {
