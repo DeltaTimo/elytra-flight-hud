@@ -213,7 +213,7 @@ public class ElytraFlightHud implements ClientModInitializer {
 				Matrix3f matrix3f = drawContext.getMatrices().peek().getNormalMatrix();
 				// Matrix4f matrix4f = modelviewstack.peek().getPositionMatrix();
 				///
-				// TODO: GlStateManager._disableTexture();
+				// Removed for 1.20: GlStateManager._disableTexture();
 				GlStateManager._depthMask(false);
 				GlStateManager._disableCull();
 				RenderSystem.setShader(GameRenderer::getRenderTypeLinesProgram);
@@ -423,7 +423,7 @@ public class ElytraFlightHud implements ClientModInitializer {
 
 				GlStateManager._enableCull();
 				GlStateManager._depthMask(true);
-				// TODO: GlStateManager._enableTexture();
+				// Removed for 1.20: GlStateManager._enableTexture();
 			}
 		}
 	}
