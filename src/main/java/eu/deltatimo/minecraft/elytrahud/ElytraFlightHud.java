@@ -202,7 +202,6 @@ public class ElytraFlightHud implements ClientModInitializer {
 					}
 				}
 
-				RenderSystem.setShaderColor(0f, 1f, 0f, 1f);
 				RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 				RenderSystem.enableBlend();
 
