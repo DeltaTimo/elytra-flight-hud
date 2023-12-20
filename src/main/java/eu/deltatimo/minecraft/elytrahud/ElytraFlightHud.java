@@ -19,6 +19,8 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.joml.Matrix3f;
+import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -199,7 +201,6 @@ public class ElytraFlightHud implements ClientModInitializer {
 					}
 				}
 
-				RenderSystem.setShaderColor(0f, 1f, 0f, 1f);
 				RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 				RenderSystem.enableBlend();
 
@@ -210,10 +211,9 @@ public class ElytraFlightHud implements ClientModInitializer {
 				Matrix3f matrix3f = stack.peek().getNormalMatrix();
 				// Matrix4f matrix4f = modelviewstack.peek().getPositionMatrix();
 				///
-				GlStateManager._disableTexture();
 				GlStateManager._depthMask(false);
 				GlStateManager._disableCull();
-				RenderSystem.setShader(GameRenderer::getRenderTypeLinesShader);
+				RenderSystem.setShader(GameRenderer::getRenderTypeLinesProgram);
 				Tessellator tessellator = Tessellator.getInstance();
 				BufferBuilder bufferBuilder = tessellator.getBuffer();
 				RenderSystem.lineWidth(2.0F);
@@ -420,7 +420,6 @@ public class ElytraFlightHud implements ClientModInitializer {
 
 				GlStateManager._enableCull();
 				GlStateManager._depthMask(true);
-				GlStateManager._enableTexture();
 			}
 		}
 	}
