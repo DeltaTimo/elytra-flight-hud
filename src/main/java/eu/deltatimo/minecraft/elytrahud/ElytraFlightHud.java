@@ -8,7 +8,6 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.*;
@@ -20,8 +19,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.joml.Matrix3f;
-import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -143,7 +140,7 @@ public class ElytraFlightHud implements ClientModInitializer {
 
 	private float hud_alpha = 0.0f;
 
-	private void onHudRender(DrawContext drawContext, float tickDelta) {
+	private void onHudRender(MatrixStack stack, float tickDelta) {
 		TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
 		MinecraftClient client = MinecraftClient.getInstance();
 		Window window = client.getWindow();
@@ -202,19 +199,21 @@ public class ElytraFlightHud implements ClientModInitializer {
 					}
 				}
 
+				RenderSystem.setShaderColor(0f, 1f, 0f, 1f);
 				RenderSystem.setShader(GameRenderer::getPositionColorProgram);
 				RenderSystem.enableBlend();
 
 				// MatrixStack modelviewstack = RenderSystem.getModelViewStack();
 				// modelviewstack.push();
 				// RenderSystem.applyModelViewMatrix();
-				Matrix4f matrix4f = drawContext.getMatrices().peek().getPositionMatrix();
-				Matrix3f matrix3f = drawContext.getMatrices().peek().getNormalMatrix();
+				Matrix4f matrix4f = stack.peek().getPositionMatrix();
+				Matrix3f matrix3f = stack.peek().getNormalMatrix();
 				// Matrix4f matrix4f = modelviewstack.peek().getPositionMatrix();
 				///
+				GlStateManager._disableTexture();
 				GlStateManager._depthMask(false);
 				GlStateManager._disableCull();
-				RenderSystem.setShader(GameRenderer::getRenderTypeLinesProgram);
+				RenderSystem.setShader(GameRenderer::getRenderTypeLinesShader);
 				Tessellator tessellator = Tessellator.getInstance();
 				BufferBuilder bufferBuilder = tessellator.getBuffer();
 				RenderSystem.lineWidth(2.0F);
@@ -377,11 +376,11 @@ public class ElytraFlightHud implements ClientModInitializer {
 						float height = screenCenterY + diff_pixels - (i > 0 ? (0.9f*textRenderer.fontHeight) : (textRenderer.fontHeight*(0.15f)));
 						if (height > screenHeight*0.85f || height < screenHeight*0.15f) continue;
 						String text = "" + Math.abs(i);
-						drawContext.drawText(textRenderer, text, (int) (screenCenterX + horizon_width / 2), (int) height, 0x00FF00, false);
-						drawContext.drawText(textRenderer, text, (int) (screenCenterX - horizon_width / 2f - textRenderer.getWidth(text) - screenWidth / 500f), (int) height, 0x00FF00, false);
+						textRenderer.draw(stack, text, screenCenterX + horizon_width / 2f, height, 0x00FF00);
+						textRenderer.draw(stack, text, screenCenterX - horizon_width / 2f - textRenderer.getWidth(text) - screenWidth / 500f, height, 0x00FF00);
 					}
 
-					drawContext.drawText(textRenderer, "" + ((int) Math.floor(player_pos.y)), (int) (screenCenterX + horizon_width * 0.8f), screenCenterY, 0x00FF00, false);
+					textRenderer.draw(stack, "" + ((int) Math.floor(player_pos.y)), screenCenterX + horizon_width * 0.8f, (float) screenCenterY, 0x00FF00);
 					// textRenderer.draw(stack, "" + (Math.round((float) player_velocity_vector.y * 10f)), screenCenterX + horizon_width * 0.8f, (float) screenCenterY + textRenderer.fontHeight * 1.5f, 0x00FF00);
 					int fall_distance_color = 0x00FF00;
 					if (player.fallDistance > player.getSafeFallDistance()*2f) {
@@ -391,8 +390,8 @@ public class ElytraFlightHud implements ClientModInitializer {
 					} else if (player.fallDistance > player.getSafeFallDistance()*0.75f) {
 						fall_distance_color = 0xFFFF00;
 					}
-					drawContext.drawText(textRenderer, "" + (Math.round((float) player_velocity_vector.y * 10f)), (int) (screenCenterX + horizon_width * 0.8f), (int) ((float) screenCenterY + textRenderer.fontHeight * 1.5f), fall_distance_color, false);
-					drawContext.drawText(textRenderer, radar_height + "R", (int) (screenCenterX + horizon_width * 0.75f), screenCenterY + screenHeight / 8, 0x00FF00, false);
+					textRenderer.draw(stack, "" + (Math.round((float) player_velocity_vector.y * 10f)), screenCenterX + horizon_width * 0.8f, (float) screenCenterY + textRenderer.fontHeight * 1.5f, fall_distance_color);
+					textRenderer.draw(stack, radar_height + "R", screenCenterX + horizon_width * 0.75f, screenCenterY + screenHeight * (1f / 8f), 0x00FF00);
 
 					// if (air_speed < 0.01) air_speed = 0;
 
@@ -403,7 +402,7 @@ public class ElytraFlightHud implements ClientModInitializer {
 					} else if (collisionDamage > 0) {
 						air_speed_color = 0x44FF00;
 					}
-					drawContext.drawText(textRenderer, "" + air_speed, (int) (screenCenterX - horizon_width * 0.75f - textRenderer.getWidth("" + air_speed)), screenCenterY, air_speed_color, false);
+					textRenderer.draw(stack, "" + air_speed, screenCenterX - horizon_width * 0.75f - textRenderer.getWidth("" + air_speed), (float) screenCenterY, air_speed_color);
 
 					for (float heading_blip = heading_fives - 3f*0.5f; heading_blip <= heading/10f + 3*0.5f; heading_blip += 0.5f) {
 						// Skip first blip if it's outside.
@@ -414,13 +413,14 @@ public class ElytraFlightHud implements ClientModInitializer {
 							String heading_text = ((Math.floor(heading_blip_360) < 10) ? "0" : "") + (int)Math.floor(heading_blip_360);
 							float heading_offset = heading - (heading_blip * 10f);
 							float heading_x = screenCenterX - (heading_offset/15f)*compass_width/2f;
-							drawContext.drawText(textRenderer, heading_text, (int) (heading_x - textRenderer.getWidth(heading_text)/2f), screenCenterY + screenHeight/4, 0x00FF00, false);
+							textRenderer.draw(stack, heading_text, heading_x - textRenderer.getWidth(heading_text)/2f, screenCenterY + screenHeight/4f, 0x00FF00);
 						}
 					}
 				}
 
 				GlStateManager._enableCull();
 				GlStateManager._depthMask(true);
+				GlStateManager._enableTexture();
 			}
 		}
 	}
